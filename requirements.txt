@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+pandas
+numpy
+torch
+scikit-learn
+scikit-surprise
+requests
+python-multipart

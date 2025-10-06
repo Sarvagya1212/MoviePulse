@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoviePulse - Polished UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f9fafb;
+        }
+        #video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+            opacity: 0.1;
+            filter: blur(4px);
+        }
+        .card-container {
+            perspective: 1000px;
+        }
+        .card {
+            background-color: #1f2937;
+            border-radius: 0.75rem;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+            position: relative;
+            transform-style: preserve-3d;
+            border: 1px solid #374151;
+        }
+        .card:hover {
+            transform: translateY(-10px) rotateY(3deg);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-color: #4f46e5;
+        }
+        .card-poster {
+            transition: transform 0.3s ease-in-out;
+        }
+        .card:hover .card-poster {
+            transform: scale(1.05);
+        }
+        .card-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,1) 30%, rgba(0,0,0,0));
+            padding: 4rem 1rem 1rem 1rem;
+            color: white;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover .card-overlay {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .feedback-btn {
+            background-color: rgba(31, 41, 55, 0.5); /* gray-800/50 */
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.2s ease;
+            transform: scale(0);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .card:hover .feedback-btn {
+            transform: scale(1);
+        }
+        .feedback-btn:hover { border-color: white; }
+        .feedback-btn.liked { background-color: #16a34a; transform: scale(1.1); }
+        .feedback-btn.disliked { background-color: #dc2626; transform: scale(1.1); }
+        
+        .skeleton-card {
+            background-color: #1f2937;
+            border-radius: 0.75rem;
+            height: 420px;
+            position: relative;
+            overflow: hidden;
+        }
+        .shimmer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-6 lg:p-8">
+
+    <video autoplay loop muted playsinline id="video-background">
+        <source src="https://static.videezy.com/system/resources/previews/000/042/783/original/Particles_2_-_4K_Motion_Background_Loop.mp4" type="video/mp4">
+    </video>
+
+    <div class="w-full max-w-7xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-5xl md:text-6xl font-bold text-white tracking-tight">🎬 MoviePulse</h1>
+            <p class="text-lg text-gray-400 mt-2">The intelligent movie recommender.</p>
+        </header>
+
+        <div class="bg-gray-900/50 ring-1 ring-white/10 p-6 rounded-xl shadow-2xl mb-10 sticky top-4 z-10 backdrop-blur-lg">
+            <div class="flex flex-col md:flex-row items-center gap-6">
+                <div class="w-full md:w-auto">
+                    <label for="userIdInput" class="block mb-2 text-sm font-medium text-gray-300">Enter User ID</label>
+                    <input type="number" id="userIdInput" class="bg-gray-800 border border-gray-600 text-white text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5" placeholder="e.g., 196" value="196">
+                </div>
+                <div class="w-full md:w-auto flex-grow">
+                     <label class="block mb-2 text-sm font-medium text-gray-300">Select Recommendation Model <span class="text-gray-500 text-xs">(hover for info)</span></label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <button onclick="getRecommendations('hybrid')" title="Best All-Rounder: Combines user behavior and content similarity." class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg transition">Hybrid</button>
+                        <button onclick="getRecommendations('sequential')" title="What to Watch Next: Predicts based on your recent viewing history." class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 px-4 rounded-lg transition">Sequential</button>
+                        <button onclick="getRecommendations('autoencoder')" title="Deep Learning Profile: Finds users with similar taste profiles." class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 px-4 rounded-lg transition">Autoencoder</button>
+                        <button onclick="getRecommendations('svd')" title="Classic Collaborative Filtering: Based on users who rated movies like you." class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 px-4 rounded-lg transition">SVD</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultsTitle" class="text-2xl font-bold text-white mb-6 hidden"></div>
+        <div id="results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6"></div>
+        <div id="status" class="text-center mt-10"></div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const userIdInput = document.getElementById('userIdInput');
+        const resultsContainer = document.getElementById('results');
+        const statusContainer = document.getElementById('status');
+        const resultsTitle = document.getElementById('resultsTitle');
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+
+        function showLoader() {
+            statusContainer.innerHTML = '';
+            resultsContainer.innerHTML = '';
+            resultsTitle.classList.add('hidden');
+            for (let i = 0; i < 10; i++) {
+                const skeletonCard = document.createElement('div');
+                skeletonCard.className = 'skeleton-card';
+                skeletonCard.innerHTML = '<div class="shimmer"></div>';
+                resultsContainer.appendChild(skeletonCard);
+            }
+        }
+
+        function showError(message) {
+            resultsContainer.innerHTML = '';
+            statusContainer.innerHTML = `
+                <div class="bg-red-900/50 ring-1 ring-red-500 text-red-200 px-4 py-3 rounded-lg flex items-center gap-3">
+                    <i data-lucide="alert-triangle"></i>
+                    <span>${message}</span>
+                </div>`;
+            lucide.createIcons();
+            resultsTitle.classList.add('hidden');
+        }
+
+        async function getRecommendations(model) {
+            const userId = userIdInput.value;
+            if (!userId) { showError('Please enter a User ID.'); return; }
+            showLoader();
+            const endpoint = (model === 'svd') ? `${API_BASE_URL}/recommend/user/${userId}` : `${API_BASE_URL}/recommend/${model}/${userId}`;
+            
+            try {
+                const response = await fetch(endpoint, { mode: 'cors' });
+                if (!response.ok) { 
+                    const errorData = await response.json().catch(() => ({ detail: 'Invalid JSON response from server.' }));
+                    throw new Error(errorData.detail || `Error: ${response.status}`); 
+                }
+                const data = await response.json();
+                renderMovies(data.recommendations, model);
+            } catch (error) {
+                console.error('Failed to fetch recommendations:', error);
+                showError(`Could not connect to the API. <br><small>This is likely a CORS issue. Please ensure your Python API server has CORS middleware enabled.</small>`);
+            }
+        }
+
+        function renderMovies(movies, model) {
+            resultsContainer.innerHTML = '';
+            if (movies.length === 0) { showError('No recommendations found for this user.'); return; }
+            
+            resultsTitle.textContent = `Top 10 Recommendations (from ${model.charAt(0).toUpperCase() + model.slice(1)} model)`;
+            resultsTitle.classList.remove('hidden');
+
+            movies.forEach((movie, index) => {
+                const posterUrl = movie.poster_url || `https://placehold.co/500x750/1f2937/374151?text=${encodeURIComponent(movie.title)}`;
+                const cardContainer = document.createElement('div');
+                cardContainer.className = 'card-container';
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.style.animation = `fadeInUp 0.5s ${index * 0.05}s ease-out forwards`;
+                card.style.opacity = '0';
+
+                const score = movie.hybrid_score ? `Hybrid Score: ${movie.hybrid_score}` : movie.predicted_rating ? `⭐ ${movie.predicted_rating.toFixed(2)} Predicted` : '';
+
+                card.innerHTML = `
+                    <img src="${posterUrl}" alt="Movie poster for ${movie.title}" class="card-poster w-full h-full object-cover">
+                    <div class="absolute top-3 right-3 flex items-center gap-2">
+                        <button onclick="sendFeedback(this, ${movie.movie_id}, 'dislike')" class="feedback-btn w-10 h-10 rounded-full flex items-center justify-center text-xl hover:bg-red-600">👎</button>
+                        <button onclick="sendFeedback(this, ${movie.movie_id}, 'like')" class="feedback-btn w-10 h-10 rounded-full flex items-center justify-center text-xl hover:bg-green-600">👍</button>
+                    </div>
+                    <div class="card-overlay">
+                        <h3 class="text-lg font-bold text-white leading-tight">${movie.title}</h3>
+                        <p class="text-xs text-gray-400 mt-1">${movie.genres}</p>
+                        ${score ? `<p class="text-sm font-semibold text-indigo-400 mt-3">${score}</p>` : ''}
+                        ${movie.explanation ? `<p class="text-sm text-gray-300/80 mt-2 italic">✨ "${movie.explanation}"</p>` : ''}
+                    </div>
+                `;
+                cardContainer.appendChild(card);
+                resultsContainer.appendChild(cardContainer);
+            });
+        }
+
+        async function sendFeedback(button, movieId, feedbackType) {
+            const userId = userIdInput.value;
+            const buttons = button.parentElement.querySelectorAll('.feedback-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('liked', 'disliked');
+            });
+            
+            button.classList.add(feedbackType === 'like' ? 'liked' : 'disliked');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/feedback`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ user_id: parseInt(userId), movie_id: movieId, feedback_type: feedbackType }),
+                    mode: 'cors'
+                });
+                if (!response.ok) throw new Error('Feedback API request failed');
+            } catch (error) {
+                console.error("Failed to send feedback:", error);
+                button.classList.remove('liked', 'disliked');
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+        
+        // Automatically load recommendations on page start
+        window.onload = () => {
+            lucide.createIcons();
+            getRecommendations('hybrid');
+        };
+    </script>
+</body>
+</html>
+
