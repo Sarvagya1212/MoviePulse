@@ -174,9 +174,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📧 Contact
 
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
+Your Email - sarvagyajain5678@gmail.com
 
-Project Link: [https://github.com/yourusername/moviepulse](https://github.com/yourusername/moviepulse)
+Project Link: [https://github.com/Sarvagya1212/moviepulse](https://github.com/Sarvagya1212/moviepulse)
 
 ---
 
